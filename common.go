@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -22,6 +23,8 @@ func DebugPrint(err error) {
 	debug.PrintStack()
 	os.Exit(1)
 }
+
+// MatchRegexString 按正则表达式p则匹配字符串v
 func MatchRegexString(p, v string) bool {
 	var e error
 	var m bool
@@ -34,6 +37,7 @@ func MatchRegexString(p, v string) bool {
 	return false
 }
 
+// UuidGenerator 生成16字符组成的唯一标识符
 func UuidGenerator() string {
 	b := make([]byte, 16)
 	_, err := rand.Read(b)
@@ -57,7 +61,7 @@ func CreateFolder(createPath string) {
 		if err != nil {
 			panic("removeAll tmp folder data failed.")
 		}
-		// 再删除此文件夹本身
+		// 再删除此文件夹本身(此处是多余的 因为本身也已删除 )
 		_ = os.Remove(createPath)
 		// 再次判断此文件夹是否存在
 		_, err = os.Stat(createPath)
@@ -75,6 +79,7 @@ func CreateFolder(createPath string) {
 	}
 }
 
+// SortStringSlice 按数字标准排序一个序列，指定desc为true则降序
 func SortStringSlice(sr []string, desc bool) {
 	sort.Slice(sr, func(i, j int) bool {
 		formatEndI := strings.LastIndex(sr[i], ".")
@@ -98,23 +103,48 @@ func SortStringSlice(sr []string, desc bool) {
 	}
 }
 
-// RemoveFolder 删除一个文件夹
-func RemoveFolder(Path string) {
+// RemoveFolder 删除一个文件夹。p必须是文件夹绝对路径
+func RemoveFolder(p string) {
 	// 有没有存在此文件夹
-	_, err := os.Stat(Path)
+	_, err := os.Stat(p)
 	// 存在则先删除
 	if err == nil {
 		// 先删除此文件夹中的所有子数据，若有
-		err = os.RemoveAll(Path)
+		err = os.RemoveAll(p)
 		// 删除子数据发生错误
 		if err != nil {
 			panic("removeAll tmp folder data failed.")
 		}
-		// 再删除此文件夹本身
-		_ = os.Remove(Path)
+		// 再删除此文件夹本身(此处是多余的 因为本身也已删除 )
+		_ = os.Remove(p)
 	}
 }
 
+// RemoveFolderChildren 删除一个文件夹下的内容，保留文件夹。p必须是文件夹绝对路径
+func RemoveFolderChildren(p string) {
+	// 有没有存在此文件夹
+	_, err := os.Stat(p)
+	// 存在则删除
+	if err == nil {
+		dys, _ := os.ReadDir(p)
+		for _, d := range dys {
+			if d.IsDir() {
+				// 删除需绝对路径
+				err := os.RemoveAll(path.Join(p, d.Name()))
+				if err != nil {
+					return
+				}
+			} else {
+				err := os.Remove(path.Join(p, d.Name()))
+				if err != nil {
+					return
+				}
+			}
+		}
+	}
+}
+
+// Reverse 将一个序列逆转(倒转)
 func Reverse(s interface{}) {
 	n := reflect.ValueOf(s).Len()
 	swap := reflect.Swapper(s)
